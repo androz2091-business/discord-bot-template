@@ -1,3 +1,4 @@
+import { CommandInteractionOptionResolver } from "discord.js";
 import type { SlashCommandRunFunction } from "../handlers/commands.js";
 
 export const commands = [
@@ -8,5 +9,9 @@ export const commands = [
 ];
 
 export const run: SlashCommandRunFunction = async (interaction) => {
+
+	const options = (interaction.options as CommandInteractionOptionResolver);
+	// use options!
+
 	interaction.reply(`🏓 Pong! My latency is currently \`${interaction.client.ws.ping}ms\`.`);
 };
