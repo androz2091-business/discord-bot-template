@@ -52,6 +52,9 @@ export const initialize = () => {
 				},
 				resources: entities,
 			});
+			app.get("/", async (request, reply) => {
+				return reply.redirect("/admin");
+			});
 			app.register(fastifyStatic, {
 				root: join(import.meta.dirname, "../public"),
 				prefix: "/public/",
