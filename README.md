@@ -29,7 +29,9 @@ All configuration for this template can be made in the `.env` file found in the 
 
 `GUILD_ID:` This is optional. In the case that your bot runs on a private server, it should be the ID of the server. Otherwise, leave empty (if this field is filled, it will be faster to create Slash Commands).
 
-`ENVIRONMENT:` Can be `ENVIRONMENT` or `PRODUCTION`. Defines whether some scripts or things should be run or not. For example, the database schemas will not be modified in production, even to synchronize them, because we may loose data.
+`ENVIRONMENT:` Can be `development` or `production`. As of 2025 this is only used to decide whether the database schemas should be automatically synced or not (you may lose data).
+
+`NODE_ENV`: always set it to `production`. So this can be confusing but is automatically read by `adminjs` to decide whether or not to bundle the JS files.
 
 `SENTRY_API_KEY:` This is optional. If you want to use [Sentry](https://sentry.io) to monitor your bot, you can put your API key here. Otherwise, leave empty.
 
