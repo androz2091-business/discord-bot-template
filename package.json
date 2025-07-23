@@ -26,6 +26,7 @@
     "class-validator": "^0.14.1",
     "cron": "^3.5.0",
     "date-format-parse": "^0.2.7",
+    "dayjs": "^1.11.13",
     "dedent": "^1.6.0",
     "discord-api-types": "^0.37.118",
     "discord.js": "^14.18.0",

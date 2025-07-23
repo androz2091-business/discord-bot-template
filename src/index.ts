@@ -2,8 +2,10 @@ import 'dotenv/config';
 import {
 	Client,
 	IntentsBitField,
-	CommandInteraction
+	CommandInteraction,
+	EmbedBuilder
 } from 'discord.js';
+import dayjs from 'dayjs';
 
 import './sentry.js';
 import {
@@ -13,6 +15,9 @@ import {
 	synchronizeSlashCommands
 } from './handlers/commands.js';
 import { loadTasks } from './handlers/tasks.js';
+import {
+	getSendLog
+} from './util.js';
 import { initialize as initializeDatabase } from './database/database.js';
 import { syncSheets } from './integrations/sheets.js';
 
@@ -43,6 +48,32 @@ client.on("interactionCreate", async (interaction) => {
 		} else {
 			const run = slashCommands.get(interaction.commandName);
 			if (!run) return;
+			await (await getSendLog(
+				(interaction as CommandInteraction<'cached'>).guildId,
+				'command-run',
+				interaction.client
+			))?.({
+				embeds: [new EmbedBuilder({
+					title: `Command run report : \`/${(interaction as CommandInteraction).command?.name}\``,
+					fields: [
+						{
+							name: 'Channel:',
+							value: `<#${interaction.channelId}>`,
+							inline: true
+						},
+						{
+							name: 'Timestamp:',
+							value: `<t:${dayjs(interaction.createdTimestamp).unix()}:f>`,
+							inline: true
+						},
+						{
+							name: 'User:',
+							value: `<@${interaction.user.id}>`,
+							inline: true
+						}
+					]
+				})]
+			});
 			run(interaction as CommandInteraction<'cached'>, interaction.commandName);
 		}
 	}

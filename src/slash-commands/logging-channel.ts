@@ -17,6 +17,7 @@ import {
 
 export const
     logTypes = [
+        'command-run'
     ] as const,
     commands = [{
         name: "logging-channel",
