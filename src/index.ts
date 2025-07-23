@@ -3,7 +3,7 @@ config();
 
 import "./sentry.js";
 
-import { initialize as initializeDatabase } from "./database.js";
+import { initialize as initializeDatabase } from "./database/database.js";
 import { loadContextMenus, loadMessageCommands, loadSlashCommands, synchronizeSlashCommands } from "./handlers/commands.js";
 
 import { syncSheets } from "./integrations/sheets.js";
