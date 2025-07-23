@@ -77,7 +77,7 @@ export const synchronizeSlashCommands = async (
 	};
 };
 
-export type SlashCommandRunFunction = (interaction: CommandInteraction, commandName: string) => void;
+export type SlashCommandRunFunction = (interaction: CommandInteraction<'cached'>, commandName: string) => void;
 
 export type MessageCommandRunFunction = (message: Message, commandName: string) => void;
 
