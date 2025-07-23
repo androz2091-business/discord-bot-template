@@ -8,7 +8,11 @@ import { loadContextMenus, loadMessageCommands, loadSlashCommands, synchronizeSl
 
 import { syncSheets } from "./integrations/sheets.js";
 
-import { Client, IntentsBitField } from "discord.js";
+import {
+	Client,
+	IntentsBitField,
+	CommandInteraction
+} from 'discord.js';
 import { loadTasks } from "./handlers/tasks.js";
 export const client = new Client({
 	intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages],
@@ -34,7 +38,7 @@ client.on("interactionCreate", async (interaction) => {
 		} else {
 			const run = slashCommands.get(interaction.commandName);
 			if (!run) return;
-			run(interaction, interaction.commandName);
+			run(interaction as CommandInteraction<'cached'>, interaction.commandName);
 		}
 	}
 });
