@@ -1,21 +1,26 @@
-import { config } from "dotenv";
-config();
-
-import "./sentry.js";
-
-import { initialize as initializeDatabase } from "./database/database.js";
-import { loadContextMenus, loadMessageCommands, loadSlashCommands, synchronizeSlashCommands } from "./handlers/commands.js";
-
-import { syncSheets } from "./integrations/sheets.js";
-
+import 'dotenv/config';
 import {
 	Client,
 	IntentsBitField,
 	CommandInteraction
 } from 'discord.js';
-import { loadTasks } from "./handlers/tasks.js";
+
+import './sentry.js';
+import {
+	loadSlashCommands,
+	loadContextMenus,
+	loadMessageCommands,
+	synchronizeSlashCommands
+} from './handlers/commands.js';
+import { loadTasks } from './handlers/tasks.js';
+import { initialize as initializeDatabase } from './database/database.js';
+import { syncSheets } from './integrations/sheets.js';
+
 export const client = new Client({
-	intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages],
+	intents: [
+		IntentsBitField.Flags.Guilds,
+		IntentsBitField.Flags.GuildMessages
+	]
 });
 
 const { slashCommands, slashCommandsData } = await loadSlashCommands(client);
