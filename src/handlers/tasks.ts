@@ -18,7 +18,7 @@ export const loadTasks = async (client: Client) => {
 		const tasksPath = join(import.meta.dirname, "..", "tasks");
 		const files = readdirSync(tasksPath);
 		for (const file of files) {
-			if (file.endsWith(".js")) {
+			if (file.endsWith(".js") || (process.versions.bun && file.endsWith('.ts'))) {
 				const taskModule = await import(join(tasksPath, file));
 				const taskOriginal = taskModule.default || taskModule;
 

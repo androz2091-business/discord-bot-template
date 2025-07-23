@@ -91,7 +91,7 @@ export const loadSlashCommands = async (client: Client) => {
 		const commandsPath = join(import.meta.dirname, "..", "slash-commands");
 		const files = readdirSync(commandsPath);
 		for (const file of files) {
-			if (file.endsWith(".js")) {
+			if (file.endsWith(".js") || (process.versions.bun && file.endsWith('.ts'))) {
 				const commandModule = await import(join(commandsPath, file));
 				const command = commandModule.default || commandModule;
 				if (!command.commands) console.log(`${file} has no commands`);
@@ -122,7 +122,7 @@ export const loadMessageCommands = async (client: Client) => {
 		const commandsPath = join(import.meta.dirname, "..", "commands");
 		const files = readdirSync(commandsPath);
 		for (const file of files) {
-			if (file.endsWith(".js")) {
+			if (file.endsWith(".js") || (process.versions.bun && file.endsWith('.ts'))) {
 				const commandModule = await import(join(commandsPath, file));
 				const command = commandModule.default || commandModule;
 				if (!command.commands) console.log(`${file} has no commands`);
@@ -150,7 +150,7 @@ export const loadContextMenus = async (client: Client) => {
 		const contextMenusPath = join(import.meta.dirname, "..", "context-menus");
 		const files = readdirSync(contextMenusPath);
 		for (const file of files) {
-			if (file.endsWith(".js")) {
+			if (file.endsWith(".js") || (process.versions.bun && file.endsWith('.ts'))) {
 				const contextMenuModule = await import(join(contextMenusPath, file));
 				const contextMenu = contextMenuModule.default || contextMenuModule;
 				if (!contextMenu.contextMenus) console.log(`${file} has no menus`);
