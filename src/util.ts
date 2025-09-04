@@ -481,8 +481,7 @@ export const
 				getCurrentFields: () => (currentModalInteraction as ModalSubmitInteraction<'cached'>).fields.fields,
 				getCurrentInteractionType: () => currentInteraction instanceof CommandInteraction ? 'command'
 											   : currentInteraction instanceof ButtonInteraction  ? 'button'
-																								  : 'selectMenu',
-				_getCurrentInteraction: () => currentInteraction
+																								  : 'selectMenu'
 			};
 		return interactionManager;
 	},
