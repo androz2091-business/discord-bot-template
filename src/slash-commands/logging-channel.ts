@@ -1,7 +1,7 @@
 import {
     ChannelType
 } from 'discord.js';
-import dedent from 'dedent';
+import { dedent } from 'ts-dedent';
 import { sentenceCase } from 'change-case';
 
 import type { SlashCommandRunFunction } from '../handlers/commands.js';

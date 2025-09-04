@@ -47,9 +47,6 @@ importers:
       dayjs:
         specifier: ^1.11.13
         version: 1.11.13
-      dedent:
-        specifier: ^1.6.0
-        version: 1.6.0(babel-plugin-macros@3.1.0)
       discord-api-types:
         specifier: ^0.37.118
         version: 0.37.119
@@ -74,6 +71,9 @@ importers:
       pg:
         specifier: ^8.13.1
         version: 8.13.3
+      ts-dedent:
+        specifier: ^2.2.0
+        version: 2.2.0
       typeorm:
         specifier: ^0.3.20
         version: 0.3.20(pg@8.13.3)
@@ -2111,14 +2111,6 @@ packages:
       supports-color:
         optional: true
 
-  dedent@1.6.0:
-    resolution: {integrity: sha512-F1Z+5UCFpmQUzJa11agbyPVMbpgT/qA3/SKyJ1jyBgm7dUcUEa8v9JwDkerSQXfakBwFljIxhOJqGkjUwZ9FSA==}
-    peerDependencies:
-      babel-plugin-macros: ^3.1.0
-    peerDependenciesMeta:
-      babel-plugin-macros:
-        optional: true
-
   deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
     engines: {node: '>=0.10.0'}
@@ -3353,6 +3345,10 @@ packages:
 
   tr46@0.0.3:
     resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
+
+  ts-dedent@2.2.0:
+    resolution: {integrity: sha512-q5W7tVM71e2xjHZTlgfTDoPF/SmqKG5hddq9SzR49CH2hayqRKJtQ4mtRlSxKaJlR/+9rEM+mnBHf7I2/BQcpQ==}
+    engines: {node: '>=6.10'}
 
   ts-mixer@6.0.4:
     resolution: {integrity: sha512-ufKpbmrugz5Aou4wcr5Wc1UUFWOLhq+Fm6qa6P0w0K5Qw2yhaUoiWszhCVuNQyNwrlGiscHOmqYoAox1PtvgjA==}
@@ -5952,10 +5948,6 @@ snapshots:
     optionalDependencies:
       supports-color: 5.5.0
 
-  dedent@1.6.0(babel-plugin-macros@3.1.0):
-    optionalDependencies:
-      babel-plugin-macros: 3.1.0
-
   deepmerge@4.3.1: {}
 
   defaults@1.0.4:
@@ -7298,6 +7290,8 @@ snapshots:
   toidentifier@1.0.1: {}
 
   tr46@0.0.3: {}
+
+  ts-dedent@2.2.0: {}
 
   ts-mixer@6.0.4: {}
 
