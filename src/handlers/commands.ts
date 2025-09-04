@@ -173,3 +173,31 @@ export const loadContextMenus = async (client: Client) => {
 		contextMenusData,
 	};
 };
+
+export const loadGlobalListeners = async () => {
+	const
+		globalListenersPath = join(import.meta.dirname, '..', 'global-listeners'),
+		globalListeners: { [key: string]: Function } = {};
+
+	let files;
+	try { files = readdirSync(globalListenersPath); } catch {}
+	if(!files){
+		console.log('No global listeners found');
+		return globalListeners;
+	}
+
+	for(const file of files){
+		if(file.endsWith('.js') || (process.versions.bun && file.endsWith('.ts'))){
+			const globalListener = (await import(join(globalListenersPath, file))).default;
+			if(!globalListener){
+				console.log(`${file} has no global listener`);
+				continue;
+			}
+			const globalListenerId = file.slice(0, -3);
+			globalListeners[globalListenerId] = globalListener;
+			console.log(`Loaded button ${globalListenerId}`);
+		}
+	}
+
+	return globalListeners;
+};

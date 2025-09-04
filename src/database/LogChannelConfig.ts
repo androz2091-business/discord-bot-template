@@ -26,4 +26,9 @@ export default class LogChannelConfig extends BaseEntity {
         nullable: true
     })
     logs!: typeof logTypes[number][];
+
+    @Column('simple-json', {
+        nullable: true
+    })
+    logMentions!: { [key in typeof logTypes[number]]?: string; }
 }

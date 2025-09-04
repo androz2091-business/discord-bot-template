@@ -38,7 +38,9 @@ import {
 	StringSelectMenuInteraction,
 	UserSelectMenuInteraction,
 	ChannelSelectMenuInteraction,
-	RoleSelectMenuInteraction
+	RoleSelectMenuInteraction,
+	MessageCreateOptions,
+	TextDisplayBuilder
 } from 'discord.js';
 import {
 	In
@@ -47,6 +49,7 @@ import {
 import { getPostgresRepository } from './database/database.js';
 import Config from './database/Config.js';
 import LogChannelConfig from './database/LogChannelConfig.js';
+import GlobalEmitter from './database/GlobalEmitter.js';
 
 export const errorEmbed = (message: string) => {
 	return {
@@ -154,25 +157,30 @@ export const
 			label: string;
 			url?: string;
 			style?: 'success' | 'danger' | 'primary' | 'secondary';
+			emoji?: string
 		}[]
 	) =>
 		new ActionRowBuilder<ButtonBuilder>().addComponents(buttons.map(({
 			id,
 			label,
 			url,
-			style = url ? 'link' : 'secondary'
-		}) => new ButtonBuilder({
-			customId: id || (url ? undefined : randomUUID()),
-			label,
-			url,
-			style: {
-				'success': ButtonStyle.Success,
-				'danger': ButtonStyle.Danger,
-				'primary': ButtonStyle.Primary,
-				'secondary': ButtonStyle.Secondary,
-				'link': ButtonStyle.Link
-			}[style]
-		}))),
+			style = url ? 'link' : 'secondary',
+			emoji
+		}) =>
+			//@ts-ignore
+			new ButtonBuilder({
+				customId: id || (url ? undefined : randomUUID()),
+				label,
+				url,
+				style: {
+					'success': ButtonStyle.Success,
+					'danger': ButtonStyle.Danger,
+					'primary': ButtonStyle.Primary,
+					'secondary': ButtonStyle.Secondary,
+					'link': ButtonStyle.Link
+				}[style],
+				emoji
+			}))),
 	createModal = ({
 		title,
 		inputs
@@ -214,6 +222,7 @@ export const
 	}),
 	createSelectRow = <type extends 'channel' | 'role' | 'user' | 'string'>({
 		type,
+		id = randomUUID(),
 		placeholder,
 		minValues,
 		maxValues,
@@ -222,6 +231,7 @@ export const
 		options
 	}: {
 		type: type,
+		id?: string,
 		placeholder: string,
 		minValues?: number,
 		maxValues?: number,
@@ -239,7 +249,7 @@ export const
 			'user': UserSelectMenuBuilder,
 			'string': StringSelectMenuBuilder,
 		}[type])({
-			customId: randomUUID(),
+			customId: id,
 			placeholder,
 			minValues,
 			maxValues,
@@ -277,11 +287,8 @@ export const
 			return interaction.editReply(payload as InteractionEditReplyOptions);
 		else if(interaction instanceof MessageComponentInteraction)
 			return (await interaction.update(payload as InteractionUpdateOptions)).fetch();
-		return (await interaction.reply({
-			...payload,
-			flags: [MessageFlags.Ephemeral],
-			withResponse: true
-		} as InteractionReplyOptions & { withResponse: true })).resource!.message!;
+		payload.flags = [MessageFlags.Ephemeral];
+		return (await interaction.reply(payload as InteractionReplyOptions)).fetch();
 	},
 	useModal = async (
 		parentInteraction: MessageComponentInteraction<'cached'>,
@@ -315,19 +322,22 @@ export const
 	}),
 	onInput: {
 		(parent: MessageComponentInteraction): Promise<AnySelectMenuInteraction<'cached'> | ButtonInteraction<'cached'>>;
-		(parent: (Message | InteractionCallbackResponse), interaction: CommandInteraction): Promise<AnySelectMenuInteraction<'cached'> | ButtonInteraction<'cached'>>;
+		(parent: (Message | InteractionCallbackResponse), interaction?: CommandInteraction): Promise<AnySelectMenuInteraction<'cached'> | ButtonInteraction<'cached'>>;
+		(parent: (Message | InteractionResponse), interaction?: CommandInteraction): Promise<AnySelectMenuInteraction<'cached'> | ButtonInteraction<'cached'>>;
 	} = async (
 		parent:
 			Message |
 			MessageComponentInteraction |
-			InteractionCallbackResponse,
+			InteractionCallbackResponse |
+			InteractionResponse,
 		interaction?: CommandInteraction
 	): Promise<AnySelectMenuInteraction<'cached'> | ButtonInteraction<'cached'>> => new Promise(async resolve => {
 		let message: Message, userId: string, remove;
 		if(parent instanceof Message){
 			message = parent;
 			userId = parent.interactionMetadata!.user.id;
-			remove = () => interaction!.deleteReply();
+			if(interaction)
+				remove = () => interaction.deleteReply();
 		}
 		if(parent instanceof MessageComponentInteraction){
 			message = parent.message;
@@ -337,7 +347,13 @@ export const
 		if(parent instanceof InteractionCallbackResponse){
 			message = parent.resource!.message!;
 			userId = parent.resource!.message!.interactionMetadata!.user.id;
-			remove = () => interaction!.deleteReply();
+			if(interaction)
+				remove = () => interaction.deleteReply();
+		}
+		if(parent instanceof InteractionResponse){
+			message = await parent.fetch();
+			userId = parent.interaction.user.id;
+			remove = () => message.delete();
 		}
 		const [result] = await Promise.allSettled([
 			message!.awaitMessageComponent({
@@ -347,8 +363,8 @@ export const
 		]);
 		if(result.status === 'fulfilled')
 			resolve(result.value as AnySelectMenuInteraction<'cached'> | ButtonInteraction<'cached'>);
-		else
-			remove!();
+		else if(remove)
+			remove();
 	}),
 	consoleLog = (...args: any[]) => console.log(...args.map(arg => inspect(arg, { depth: 0, colors: true }))),
 	getSendLog = async (
@@ -360,19 +376,26 @@ export const
 		const logChannelConfig = await (await getPostgresRepository(LogChannelConfig))
 			.findOneBy({ guildId }) as LogChannelConfig;
 		if(!logChannelConfig) return;
-		const {
-			logs,
-			channelId
-		} = logChannelConfig;
+		const
+			{
+				logs,
+				channelId,
+				logMentions
+			} = logChannelConfig,
+			mention = logMentions?.[type];
 		if(logs && !logs.includes(type)) return;
-		return (...args: Parameters<GuildTextBasedChannel['send']>) => Promise.allSettled([
-			(client.channels.cache.get(channelId) as GuildTextBasedChannel).send(...args),
-			...userId ? [(async () => (await client.users.fetch(userId)).send(...args))()] : []
-		]);
+		return (payload: MessageCreateOptions) => {
+			if(mention)
+				payload.content = `<@&${mention}> ${payload.content || ''}`;
+			return Promise.allSettled([
+				(client.channels.cache.get(channelId) as GuildTextBasedChannel).send(payload),
+				...userId ? [(async () => (await client.users.fetch(userId)).send(payload))()] : []
+			]);
+		};
 	},
 	chunk = (array: any[], chunkSize: number) => [...Array(Math.ceil(array.length / chunkSize))]
 		.map((_, index) => array.slice(index * chunkSize, index * chunkSize + chunkSize)),
-	createInteractionManager = (initialInteraction: CommandInteraction<'cached'> | ButtonInteraction<'cached'>) => {
+	createInteractionManager = (initialInteraction: CommandInteraction<'cached'> | ButtonInteraction<'cached'> | AnySelectMenuInteraction<'cached'>) => {
 		let
 			currentInteraction: CommandInteraction<'cached'> | ButtonInteraction<'cached'> | AnySelectMenuInteraction<'cached'> = initialInteraction,
 			currentModalInteraction: ModalSubmitInteraction<'cached'>;
@@ -395,7 +418,9 @@ export const
 				getOption: (key: string) => (initialInteraction as CommandInteraction<'cached'>).options.get(key),
 				setProp: (key: string, value: any) => props.set(key, value),
 				getProp: (key: string) => props.get(key),
-				onInput: async () => {
+				onInput: async (parentOverride?: Message | InteractionResponse) => {
+					if(parentOverride)
+						return void (currentInteraction = await onInput(parentOverride, currentInteraction as CommandInteraction<'cached'>));
 					if(currentInteraction instanceof CommandInteraction)
 						return void (currentInteraction = await onInput(await currentInteraction.fetchReply(), currentInteraction));
 					return void (currentInteraction = await onInput(currentInteraction));
@@ -410,19 +435,27 @@ export const
 					modalData,
 					isRemoveButton
 				)).interaction),
-				useMenus: async (
-					selectRows: ActionRowBuilder<ChannelSelectMenuBuilder | RoleSelectMenuBuilder | StringSelectMenuBuilder | UserSelectMenuBuilder>[],
-					valuesPerRow: string[][] = []
-				) => {
+				useMenus: async <isFlatten extends boolean = true>(
+					rows: (ActionRowBuilder<ChannelSelectMenuBuilder | RoleSelectMenuBuilder | StringSelectMenuBuilder | UserSelectMenuBuilder> | TextDisplayBuilder)[],
+					valuesPerRow: (string | undefined)[][] = [],
+					isResetPayload?: boolean,
+					isFlatten: isFlatten = true as isFlatten
+				): Promise<isFlatten extends true ? string[] : (string | undefined)[][]> => {
+					const
+						selectRows = rows.filter(row => row instanceof ActionRowBuilder),
+						hasTextRows = rows.some(row => row instanceof TextDisplayBuilder);
 					await interactionManager.respond({
 						components: [
-							...selectRows,
+							...rows,
 							createButtonRow([{ id: 'submit', label: 'Submit', style: 'primary' }])
-						]
-					});
+						],
+						...hasTextRows ? {
+							flags: [MessageFlags.IsComponentsV2]
+						} : {},
+					}, isResetPayload);
 					let
 						isSelect,
-						result: string[] = valuesPerRow.flat();
+						result: (string | undefined)[] = valuesPerRow.flat();
 					do {
 						await interactionManager.onInput();
 						await interactionManager.defer();
@@ -436,12 +469,13 @@ export const
 						}
 					}
 					while(isSelect);
-					return result;
+					return (isFlatten ? result : valuesPerRow) as isFlatten extends true ? string[] : (string | undefined)[][];
 				},
 				followUp: (options: InteractionReplyOptions) => currentInteraction.followUp({
 					...options,
 					flags: [MessageFlags.Ephemeral]
 				}),
+				deleteReply: () => currentInteraction.deleteReply(),
 				getCurrentCustomId: () => (currentInteraction as ButtonInteraction<'cached'> | AnySelectMenuInteraction<'cached'>).component.customId,
 				getCurrentValues: () => (currentInteraction as StringSelectMenuInteraction<'cached'> | UserSelectMenuInteraction<'cached'> | RoleSelectMenuInteraction<'cached'> | ChannelSelectMenuInteraction<'cached'>).values,
 				getCurrentFields: () => (currentModalInteraction as ModalSubmitInteraction<'cached'>).fields.fields,
@@ -468,3 +502,30 @@ export const
 	};
 
 export type InteractionManager = ReturnType<typeof createInteractionManager>;
+
+export const
+	defineGlobalListener = (
+		listener: (
+			interaction: ButtonInteraction<'cached'> | AnySelectMenuInteraction<'cached'>,
+			context: {
+				[key: string]: string
+			}
+		) => void
+	) => {
+		return listener;
+	},
+	createGlobalEmitter = async ({
+		event,
+		context
+	}: {
+		event: string,
+		context: object
+	}) => {
+		const id = randomUUID();
+		await (await getPostgresRepository(GlobalEmitter)).insert({
+			id,
+			event,
+			context: JSON.stringify(context)
+		});
+		return id;
+	};

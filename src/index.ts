@@ -12,13 +12,18 @@ import {
 	loadSlashCommands,
 	loadContextMenus,
 	loadMessageCommands,
-	synchronizeSlashCommands
+	synchronizeSlashCommands,
+	loadGlobalListeners
 } from './handlers/commands.js';
 import { loadTasks } from './handlers/tasks.js';
 import {
 	getSendLog
 } from './util.js';
-import { initialize as initializeDatabase } from './database/database.js';
+import {
+	initialize as initializeDatabase,
+	getPostgresRepository
+} from './database/database.js';
+import GlobalEmitter from './database/GlobalEmitter.js';
 import { syncSheets } from './integrations/sheets.js';
 
 export const client = new Client({
@@ -31,6 +36,7 @@ export const client = new Client({
 const { slashCommands, slashCommandsData } = await loadSlashCommands(client);
 const { contextMenus, contextMenusData } = await loadContextMenus(client);
 const messageCommands = loadMessageCommands(client);
+const globalListeners = await loadGlobalListeners();
 loadTasks(client);
 
 synchronizeSlashCommands(client, [...slashCommandsData, ...contextMenusData], {
@@ -76,6 +82,14 @@ client.on("interactionCreate", async (interaction) => {
 			});
 			run(interaction as CommandInteraction<'cached'>, interaction.commandName);
 		}
+	}
+
+	if(interaction.inCachedGuild() && (interaction.isButton() || interaction.isAnySelectMenu())){
+		const globalEmitter = await (await getPostgresRepository(GlobalEmitter)).findOneBy({ id: interaction.customId });
+		if(!globalEmitter) return;
+		const globalListener = globalListeners[globalEmitter.event];
+		if(!globalListener) return;
+		return globalListener(interaction, JSON.parse(globalEmitter.context));
 	}
 });
 
