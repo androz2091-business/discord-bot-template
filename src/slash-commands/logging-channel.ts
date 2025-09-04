@@ -28,10 +28,8 @@ export const
             interactionManager = createInteractionManager(interaction),
             { guildId } = interactionManager,
             logChannelConfig = await (await getPostgresRepository(LogChannelConfig)).findOneBy({ guildId }) as LogChannelConfig | null,
-            {
-                channelId,
-                logs
-            } = logChannelConfig || {};
+            { channelId } = logChannelConfig || {},
+            logs = logChannelConfig?.logs || [...logTypes];
 
         await interactionManager.respond({
             embeds: (
@@ -40,14 +38,12 @@ export const
                         The current logging channel is <#${channelId}>.
     
                         ${
-                            logs
-                                ? logs.length > 0
-                                    ? dedent `
-                                        The following logs are enabled :
-                                        - ${logs.map(_ => sentenceCase(_)).join('\n- ')}
-                                    `
-                                    : 'Logs are disabled.'
-                                : 'All logs are enabled.'
+                            logs.length > 0
+                                ? dedent `
+                                    The following logs are enabled :
+                                    - ${logs.map(_ => sentenceCase(_)).join('\n- ')}
+                                `
+                                : 'Logs are disabled.'
                         }
                     `)
                     : errorEmbed("No logging channel is set for this server!")
