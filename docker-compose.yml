@@ -22,17 +22,19 @@ services:
     # Word of caution: this only makes the container start first, it doesn't wait until the container has finished starting up.
     depends_on:
       - postgres
-  
+
   # This builds you a database
   postgres:
     image: postgres:12
     environment:
       # This is the user your bot will login to the database with
-      POSTGRES_USER: postgres
+      POSTGRES_USER: ${DB_USERNAME}
       # This is the database name which will get created automagically for you.
-      POSTGRES_DB: discord_bot
+      POSTGRES_DB: ${DB_NAME}
       # This is the port the database will use to communicate on.
       POSTGRES_PORT: '5432'
+      # This is the password your bot will use to authenticate with the database
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     # ports to expose to your machine (and others)
     ports:
       - "5432:5432"

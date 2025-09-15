@@ -9,3 +9,9 @@ node_modules
 
 # Google Credentials
 google-creds.json
+
+# JetBrains IDE files
+.idea
+
+# AdminJS files
+.adminjs

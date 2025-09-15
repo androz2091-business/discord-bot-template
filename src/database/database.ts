@@ -1,31 +1,31 @@
-import { Database, Resource } from "@adminjs/typeorm";
-import { validate } from "class-validator";
-import { BaseEntity, Column, DataSource, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+	readdirSync
+} from 'node:fs';
+import {
+	createRequire
+} from 'node:module';
+import {
+	join
+} from 'node:path';
 
-import { join } from "node:path";
-import AdminJSFastify from "@adminjs/fastify";
-import fastifyStatic from "@fastify/static";
-import AdminJS from "adminjs";
-import fastify from "fastify";
+import { validate } from 'class-validator';
+import {
+	Database,
+	Resource
+} from '@adminjs/typeorm';
+import {
+	DataSource,
+	EntitySchema,
+	EntityTarget,
+	ObjectLiteral
+} from 'typeorm';
+import AdminJS from 'adminjs';
+import fastify from 'fastify';
+import fastifyStatic from '@fastify/static';
+import AdminJSFastify from '@adminjs/fastify';
 
 Resource.validate = validate;
 AdminJS.registerAdapter({ Database, Resource });
-
-@Entity()
-export class User extends BaseEntity {
-	@PrimaryGeneratedColumn()
-	id!: number;
-
-	@Column({
-		length: 32,
-	})
-	userId!: string;
-
-	@Column()
-	money!: number;
-}
-
-const entities = [User];
 
 let resolveInitialize: (value: DataSource) => void;
 export const getPostgres: Promise<DataSource> = new Promise((resolve) => {
@@ -33,6 +33,11 @@ export const getPostgres: Promise<DataSource> = new Promise((resolve) => {
 });
 
 export const initialize = () => {
+	const entities: EntitySchema[] = [];
+	for(const file of readdirSync(import.meta.dirname)){
+		if(file.startsWith('database.')) continue;
+		entities.push(createRequire(import.meta.url)(`./${file}`).default);
+	}
 	const Postgres = new DataSource({
 		type: "postgres",
 		host: process.env.DB_HOST,
@@ -88,3 +93,5 @@ export const initialize = () => {
 	});
 	return getPostgres;
 }
+
+export const getPostgresRepository = async (entity: EntityTarget<ObjectLiteral>) => (await getPostgres).getRepository(entity);
