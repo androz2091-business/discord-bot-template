@@ -94,4 +94,5 @@ export const initialize = () => {
 	return getPostgres;
 }
 
-export const getPostgresRepository = async (entity: EntityTarget<ObjectLiteral>) => (await getPostgres).getRepository(entity);
+export const getPostgresRepository = async <T extends ObjectLiteral>(entity: EntityTarget<T>): Promise<Repository<T>> =>
+	(await getPostgres).getRepository<T>(entity);
